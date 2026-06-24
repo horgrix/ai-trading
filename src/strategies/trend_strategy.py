@@ -2,13 +2,17 @@
 双均线 + DMI 趋势策略 - 基于 backtrader 实现
 
 策略规格：
+每次操作前要检查目前仓位水位，若已经满仓则不进行操作
+
 | 模块     | 条件                                                                                     | 投入仓位 |
 |----------|------------------------------------------------------------------------------------------|----------|
-| 多头入场 | ADX > 25 且 +DI > -DI 且 快均线上穿慢均线（金叉）                                        | 55%      |
-| 多头追加 | ADX > 40 且 +DI > -DI 且 快均线在慢均线之上 且 快均线和慢均线均为上升趋势                  | 45%      |
-| 空头入场 | ADX > 25 且 -DI > +DI 且 快均线下穿慢均线（死叉）                                        | 95%      |
-| 多头平仓 | +DI < -DI（多头转弱）或 死叉出现 或 (ADX >= 55 且 快均线和慢均线其中一个为下降趋势)         | -        |
+| 多头入场 | ADX > 25 且 +DI > -DI 且 快均线上穿慢均线（金叉）                                        | 60%      |
+| 多头追加 | ADX > 40 且 +DI > -DI 且 快均线在慢均线之上 且 快均线和慢均线均为上升趋势                | 35%      |
+| 空头入场 | ADX > 25 且 -DI > +DI 且 快均线下穿慢均线（死叉）                                        | 60%      |
+| 多头平仓 | +DI < -DI（多头转弱）或 死叉出现 或 (ADX >= 55 且 快均线和慢均线其中一个为下降趋势)      | -        |
 | 空头平仓 | -DI < +DI（空头转弱）或 金叉出现                                                         | -        |
+
+注意：入场 + 追加累计最大 95%，不满仓，留 5% 缓冲。
 """
 
 import backtrader as bt
@@ -33,8 +37,9 @@ class SmaWithDmiTrendStrategy(bt.Strategy):
         ('adx_strong', 40),     # ADX 强趋势阈值（追加条件）
         ('adx_extreme', 55),    # ADX 极端阈值（潜在反转平仓）
         # 仓位比例
-        ('entry_ratio', 0.55),  # 入场仓位比例
-        ('add_ratio', 0.45),    # 追加仓位比例（累计可达 entry + add）
+        ('entry_ratio', 0.60),  # 入场仓位比例（多头/空头）
+        ('add_ratio', 0.35),    # 多头追加仓位比例（累计最大 95%，留 5% 缓冲）
+        ('max_ratio', 0.95),    # 满仓阈值（总仓位占比），超过视为满仓不操作
         # 风险控制
         ('trailing_stop', 0.0), # （预留）追踪止损比例，0 表示不启用
     )
@@ -90,6 +95,17 @@ class SmaWithDmiTrendStrategy(bt.Strategy):
         """计算目标市值"""
         return self.broker.get_value() * ratio
 
+    def _is_full_position(self) -> bool:
+        """
+        检查是否已满仓（超过 max_ratio 阈值）
+        满仓定义：当前持仓市值 >= 总资产 * max_ratio
+        """
+        if not self.position:
+            return False
+        current_exposure = abs(self.position.size) * self.data.close[0]
+        total_value = self.broker.get_value()
+        return current_exposure >= total_value * self.params.max_ratio
+
     # ======================== 主逻辑 ========================
 
     def next(self):
@@ -143,8 +159,11 @@ class SmaWithDmiTrendStrategy(bt.Strategy):
                     )
                 else:
                     # 多头追加：ADX > 40 且 +DI > -DI 且 SMA快在SMA慢之上 且 双均线上升
-                    if trend_strong and is_bullish and sma_fast_above_slow and both_sma_rising:
-                        # 目标仓位 = 入场55% + 追加45% = 100%
+                    # 满仓检查：若已满仓则不追加
+                    if self._is_full_position():
+                        pass  # 满仓，跳过追加
+                    elif trend_strong and is_bullish and sma_fast_above_slow and both_sma_rising:
+                        # 目标仓位 = 入场60% + 追加35% = 95%
                         full_target_ratio = self.params.entry_ratio + self.params.add_ratio
                         target_value = self._get_target_value(full_target_ratio)
                         if target_value > self.position.size * self.data.close[0]:
