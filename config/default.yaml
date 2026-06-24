@@ -1,0 +1,29 @@
+# AI Trading 默认配置文件
+
+# 交易配置
+trading:
+  initial_capital: 100000
+  max_position_size: 0.1  # 最大持仓比例
+  commission: 0.001       # 手续费率
+  slippage: 0.001         # 滑点
+
+# 数据配置
+data:
+  default_timeframe: "1d"
+  default_lookback_days: 365
+  symbols:
+    - "AAPL"
+    - "GOOGL"
+    - "MSFT"
+    - "TSLA"
+
+# 模型配置
+model:
+  lookahead: 5            # 预测未来 N 天
+  train_split_ratio: 0.8
+  random_seed: 42
+
+# 日志配置
+logging:
+  level: "INFO"
+  log_to_file: true
