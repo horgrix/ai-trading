@@ -51,3 +51,7 @@ logs/
 # Local configuration
 config/local.yaml
 config/secrets.yaml
+
+# db
+*.sqlite
+*.db
