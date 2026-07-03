@@ -231,7 +231,7 @@ if echo "$HEALTH_RESPONSE" | grep -q '"status":"ok"'; then
 else
     echo ""
     echo "  ✗ 健康检查失败，请检查日志："
-    echo "    journalctl -u ${SERVICE_NAME} -n 50 --no-pager"
-    echo "    或: tail -f ${PROJECT_DIR}/log/data-crawler-api.log"
+    echo "    journalctl -u ${API_SERVICE_NAME} -n 50 --no-pager"
+    echo "    或: tail -f ${PROJECT_DIR}/logs/ai-trading-api.log"
     exit 1
 fi
