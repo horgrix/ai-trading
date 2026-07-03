@@ -16,7 +16,7 @@ from dao.hkex_dao import load_market_short_selling
 from dao.hkex_dao import query_stocks_short_selling
 from database.ai_trading_db import connection
 
-router = APIRouter(prefix="/api/hkex", tags=["hkex"])
+router = APIRouter(prefix="/api/v2/market/hkex", tags=["hkex"])
 
 
 @router.get("/market-short-selling")

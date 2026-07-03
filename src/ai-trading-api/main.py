@@ -41,7 +41,7 @@ app.include_router(hkex_router)
 app.include_router(hkma_router)
 
 
-@app.get("/")
+@app.get("/api/v2/market/")
 def root():
     """API 根路径 - 健康检查"""
     return {
@@ -51,10 +51,10 @@ def root():
     }
 
 
-@app.get("/health")
+@app.get("/api/v2/market/health")
 def health_check():
     """健康检查接口"""
-    return {"status": "healthy"}
+    return {"status": "ok"}
 
 if __name__ == "__main__":
     import uvicorn

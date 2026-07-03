@@ -14,7 +14,7 @@ from dao.hkma_dao import get_date_range as dao_get_date_range
 from dao.hkma_dao import load_hkma_data
 from database.ai_trading_db import connection
 
-router = APIRouter(prefix="/api/hkma", tags=["hkma"])
+router = APIRouter(prefix="/api/v2/market/hkma", tags=["hkma"])
 
 
 @router.get("/data")

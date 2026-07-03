@@ -16,7 +16,7 @@ from dao.stocks_dao import get_date_range as dao_get_date_range
 from dao.stocks_dao import load_stock_data
 from database.ai_trading_db import connection
 
-router = APIRouter(prefix="/api/stocks", tags=["stocks"])
+router = APIRouter(prefix="/api/v2/market/stocks", tags=["stocks"])
 
 
 @router.get("/symbols")
