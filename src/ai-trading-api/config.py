@@ -48,7 +48,7 @@ class Settings(BaseSettings):
 
     # 服务器
     host: str = "0.0.0.0"
-    port: int = 8000
+    port: int = 8002
 
     # 爬虫
     request_timeout: float = 30.0
