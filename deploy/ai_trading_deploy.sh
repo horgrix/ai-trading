@@ -222,7 +222,7 @@ echo "========================================"
 
 sleep 2
 
-HEALTH_RESPONSE=$(curl -s --connect-timeout 5 http://127.0.0.1/api/v1/health 2>/dev/null || echo "")
+HEALTH_RESPONSE=$(curl -s --connect-timeout 5 http://127.0.0.1/api/v2/market/health 2>/dev/null || echo "")
 
 if echo "$HEALTH_RESPONSE" | grep -q '"status":"ok"'; then
     echo ""
