@@ -235,3 +235,5 @@ else
     echo "    或: tail -f ${PROJECT_DIR}/logs/ai-trading-api.log"
     exit 1
 fi
+
+#poetry init --name "ai-trading" --description "AI Trading System" --author "Horgrix <horgrix@outlook.com>" --python "^3.12" --no-interaction
