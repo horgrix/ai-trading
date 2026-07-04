@@ -24,6 +24,8 @@ from indicators.volatility_indicators import atr, bbands, kc, donchian
 from indicators.overlap_Indicators import ema, sma, hma, wma, kama
 from indicators.mtm_indicators import roc, rsi, macd, mom, stoch, willr, ao, cci
 
+from strategies.score_strategy import strong_buy, oversold_opportunity, trend_continuation
+
 # 函数映射表
 FUNCTION_MAP = {
     # mtm_indicators
@@ -75,6 +77,21 @@ def get_available_symbols():
     with connection() as conn:
         symbols = dao_get_symbols(conn)
     return {"count": len(symbols), "data": symbols}
+
+@router.get("/strategies")
+def get_trading_strategies(
+    symbol: str = Query(..., description="股票代码"),
+    type: str = Query(..., description="时间类型"),
+    start_date: Optional[str] = Query(None, description="起始日期 (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="结束日期 (YYYY-MM-DD)"),
+):
+    with connection() as conn:
+        df = load_stock_data(conn, symbol, type, start_date, end_date)
+
+    if df.empty:
+        return {"count": 0, "data": []}
+    
+    strong_buy(df)
 
 
 @router.get("/data")
