@@ -78,12 +78,13 @@ def get_available_symbols():
         symbols = dao_get_symbols(conn)
     return {"count": len(symbols), "data": symbols}
 
-@router.get("/strategies/buy_point")
+@router.get("/signals")
 def get_trading_strategies_buy(
     symbol: str = Query(..., description="股票代码"),
     type: str = Query(..., description="时间类型"),
     start_date: Optional[str] = Query(None, description="起始日期 (YYYY-MM-DD)"),
     end_date: Optional[str] = Query(None, description="结束日期 (YYYY-MM-DD)"),
+    option: Optional[str] = Query('buy', description="buy|sell"),
 ):
     with connection() as conn:
         df = load_stock_data(conn, symbol, type, start_date, end_date)
@@ -96,7 +97,12 @@ def get_trading_strategies_buy(
 
     df = df.copy()
     df = calculate_all_scores(df)
-    df = generate_bullish_entry_signals(df)
+    if option == 'buy':
+        df = generate_bullish_entry_signals(df)
+        df = df[['date', 'close', 'entry_signal', 'entry_level']]
+    else:
+        df = generate_bullish_take_profit_signals(df)
+        df = df[['date', 'close', 'tp_signal', 'tp_level']]
     # 将 NaN 替换为 None，确保 JSON 序列化兼容
     df = df.replace({np.nan: None})
     records = df.to_dict(orient="records")

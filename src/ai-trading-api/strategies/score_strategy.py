@@ -927,7 +927,7 @@ def generate_bullish_entry_signals(df: pd.DataFrame) -> pd.DataFrame:
     df.loc[(df['Volatility_State'] == 'high') & (df['entry_signal'] > 0), 'entry_signal'] *= 0.5
     df.loc[(df['Volatility_State'] == 'high') & (df['entry_level'] != 'none'), 'entry_level'] += '_cautious'
     
-    return df[['close', 'entry_signal', 'entry_level']]
+    return df[['date', 'close', 'entry_signal', 'entry_level']]
 
 def generate_bullish_take_profit_signals(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -1093,4 +1093,4 @@ def generate_bullish_take_profit_signals(df: pd.DataFrame) -> pd.DataFrame:
     # 如果综合得分转负，立即止盈
     df.loc[(df['total_score'] < -0.5) & (df['tp_signal'] <= 1), 'tp_level'] = 'score_sell'
     
-    return df[['close', 'tp_signal', 'tp_level']]
+    return df[['date', 'close', 'tp_signal', 'tp_level']]
