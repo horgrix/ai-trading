@@ -106,7 +106,7 @@ def get_stock_data(
         for indicator in indicator_list:
             if indicator not in FUNCTION_MAP:
                 continue
-            df = indicator(df)
+            df = FUNCTION_MAP[indicator](df)
 
     records = df.to_dict(orient="records")
     return {"count": len(records), "data": records}
