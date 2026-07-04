@@ -7,6 +7,8 @@ def sma(df_sorted: DataFrame):
     sma_20 = ta.sma(close=df_sorted['close'], length=20)
     sma_50 = ta.sma(close=df_sorted['close'], length=50)
     sma_200 = ta.sma(close=df_sorted['close'], length=200)
+    if sma_20 is None or sma_50 is None or sma_200 is None:
+        return df_sorted
     with_sma_20 = df_sorted.join(sma_20)
     with_sma_50 = with_sma_20.join(sma_50)
     with_sma_200 = with_sma_50.join(sma_200)
@@ -43,6 +45,8 @@ def ema(df_sorted: DataFrame):
     # ===== 2. EMA (指数移动平均线) =====
     ema_12 = ta.ema(close=df_sorted['close'], length=12)
     ema_26 = ta.ema(close=df_sorted['close'], length=26)
+    if ema_12 is None or ema_26 is None:
+        return df_sorted
     with_ema_12 = df_sorted.join(ema_12)
     with_ema_26 = with_ema_12.join(ema_26)
 
@@ -70,6 +74,8 @@ def ema(df_sorted: DataFrame):
 def wma(df_sorted: DataFrame):
     # ===== 3. WMA (加权移动平均线) =====
     wma_20 = ta.wma(close=df_sorted['close'], length=20)
+    if wma_20 is None:
+        return df_sorted
     with_wma_20 = df_sorted.join(wma_20)
 
     # ===== 3. WMA 信号 =====
@@ -82,6 +88,8 @@ def wma(df_sorted: DataFrame):
 def hma(df_sorted: DataFrame):
     # ===== 4. HMA (哈尔移动平均线) =====
     hma_20 = ta.hma(close=df_sorted['close'], length=20)
+    if hma_20 is None:
+        return df_sorted
     with_hma_20 = df_sorted.join(hma_20)
 
     # ===== 4. HMA 信号 =====
@@ -107,7 +115,10 @@ def hma(df_sorted: DataFrame):
 
 def kama(df_sorted: DataFrame):
     # ===== 6. KAMA (卡夫曼自适应移动平均线) =====
-    kama_20 = ta.kama(close=df_sorted['close'], length=20).rename('KAMA_20')
+    kama_20 = ta.kama(close=df_sorted['close'], length=20)
+    if kama_20 is None:
+        return df_sorted
+    kama_20 = kama_20.rename('KAMA_20')
     with_kama_20 = df_sorted.join(kama_20)
 
     # ===== 6. KAMA 信号 =====

@@ -5,7 +5,10 @@ from pandas import DataFrame
 def atr(df_sorted: DataFrame):
     # ===== 1. ATR (平均真实波幅) =====
     atr = ta.atr(high=df_sorted['high'], low=df_sorted['low'], 
-                            close=df_sorted['close'], length=14).rename('ATR_14')
+                            close=df_sorted['close'], length=14)
+    if atr is None:
+        return df_sorted
+    atr = atr.rename('ATR_14')
     with_atr = df_sorted.join(atr)
     
     # ===== 1. ATR 信号 =====
@@ -30,6 +33,8 @@ def atr(df_sorted: DataFrame):
 def bbands(df_sorted: DataFrame):
     # ===== 5. BBANDS (布林带) =====
     bbands = ta.bbands(close=df_sorted['close'], length=20, std=2)
+    if bbands is None:
+        return df_sorted
     with_bbands = df_sorted.join(bbands)
     # 列名: BBU_20_2.0 (上轨), BBM_20_2.0 (中轨), BBL_20_2.0 (下轨), BBB_20_2.0 (带宽百分比)
     # 重命名为更简洁的名称
@@ -63,6 +68,8 @@ def bbands(df_sorted: DataFrame):
 def kc(df_sorted: DataFrame):
     # ===== 3. KC (凯尔顿通道) =====
     kc = ta.kc(high=df_sorted['high'], low=df_sorted['low'], close=df_sorted['close'], length=20, scalar=2)
+    if kc is None:
+        return df_sorted
     with_kc = df_sorted.join(kc)
     
     with_kc.rename(columns={
@@ -90,6 +97,8 @@ def kc(df_sorted: DataFrame):
 def donchian(df_sorted: DataFrame):
     # ===== 4. DONCHIAN (唐奇安通道) =====
     donchian = ta.donchian(high=df_sorted['high'], low=df_sorted['low'], length=20)
+    if donchian is None:
+        return df_sorted
     with_donchian = df_sorted.join(donchian)
     
     with_donchian.rename(columns={

@@ -38,6 +38,8 @@ def psar(df: DataFrame):
     刚反转，两者都有值	    有值	有值	趋势转换期，观望
     """
     psar_df = ta.psar(high=df['high'], low=df['low'], close=df['close'], af=0.02, max_af=0.2, append=True)
+    if psar_df is None:
+        return df
     df_with_psar = df.join(psar_df[['PSARl_0.02_0.2', 'PSARs_0.02_0.2']]).rename(columns={
         'PSARl_0.02_0.2': 'PSAR_Long_Stop',
         'PSARs_0.02_0.2': 'PSAR_Short_Stop'
@@ -84,6 +86,8 @@ def aroon(df: DataFrame):
     """
     # 基础用法：默认周期14
     aroon_df = ta.aroon(high=df['high'], low=df['low'], length=14)
+    if aroon_df is None:
+        return df
 
     # 合并结果（列名：AROOND_14, AROONU_14, AROONOSC_14）
     df_with_aroon = df.join(aroon_df)
@@ -113,6 +117,8 @@ def vortex(df: DataFrame):
     """
     # 基础用法：默认周期14
     vortex_df = ta.vortex(high=df['high'], low=df['low'], close=df['close'], length=14)
+    if vortex_df is None:
+        return df
 
     df_with_vortex = df.join(vortex_df)
     # 列名：VTXP_14 (正漩涡), VTXM_14 (负漩涡)
@@ -143,7 +149,10 @@ def chop(df: DataFrame):
     """
 
     # 基础用法：默认周期14
-    chop_df = ta.chop(high=df['high'], low=df['low'], close=df['close'], length=14).rename('CHOP_14')
+    chop_df = ta.chop(high=df['high'], low=df['low'], close=df['close'], length=14)
+    if chop_df is None:
+        return df
+    chop_df = chop_df.rename('CHOP_14')
 
     df_with_chop = df.join(chop_df)
     # 列名：CHOP_14
@@ -168,6 +177,8 @@ def adx(df: DataFrame):
     核心用法：常与 DMP (+DI) 和 DMN (-DI) 配合。当 +DI 上穿 -DI 且 ADX 在 25 以上时，是较强的买入信号。
     """
     adx = ta.adx(high=df['high'], low=df['low'], close=df['close'], length=14, append=True)
+    if adx is None:
+        return df
     with_adx = df.join(adx)
 
     # ===== 1. ADX 信号 =====

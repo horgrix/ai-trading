@@ -1,5 +1,5 @@
 """
-
+动量指标模块 - 包含 RSI, MACD, STOCH, MOM, ROC, CCI, WILLR, AO 等动量类技术指标
 """
 import pandas_ta as ta
 from pandas import DataFrame
@@ -9,6 +9,8 @@ def rsi(df_sorted: DataFrame):
 
     # ===== 1. RSI (相对强弱指数) =====
     rsi = ta.rsi(close=df_sorted['close'], length=14)
+    if rsi is None:
+        return df_sorted
     with_rsi = df_sorted.join(rsi)
 
     # ===== 1. RSI 信号 =====
@@ -37,6 +39,8 @@ def macd(df_sorted: DataFrame):
 
     # ===== 2. MACD (移动平均收敛发散) =====
     macd = ta.macd(close=df_sorted['close'], fast=12, slow=26, signal=9)
+    if macd is None:
+        return df_sorted
     with_macd = df_sorted.join(macd)
     # 列名: MACD_12_26_9 (快线), MACDh_12_26_9 (柱状线), MACDs_12_26_9 (慢线/信号线)
 
@@ -74,6 +78,8 @@ def stoch(df_sorted: DataFrame):
 
     # ===== 3. STOCH (随机振荡器) =====
     stoch = ta.stoch(high=df_sorted['high'], low=df_sorted['low'], close=df_sorted['close'], k=14, d=3, smooth_k=1)
+    if stoch is None:
+        return df_sorted
     with_stoch = df_sorted.join(stoch)
     # 列名: STOCHk_14_3_1 (%K线), STOCHd_14_3_1 (%D线)
 
@@ -99,6 +105,8 @@ def stoch(df_sorted: DataFrame):
 def mom(df_sorted: DataFrame):
     # ===== 4. MOM (动量指标) =====
     mom = ta.mom(close=df_sorted['close'], length=10)
+    if mom is None:
+        return df_sorted
     with_mom = df_sorted.join(mom)
 
     # ===== 4. MOM 信号 =====
@@ -117,6 +125,8 @@ def mom(df_sorted: DataFrame):
 def roc(df_sorted: DataFrame):
     # ===== 5. ROC (变化率) =====
     roc = ta.roc(close=df_sorted['close'], length=10)
+    if roc is None:
+        return df_sorted
     with_roc = df_sorted.join(roc)
 
     # ===== 5. ROC 信号 =====
@@ -134,7 +144,10 @@ def roc(df_sorted: DataFrame):
 def cci(df_sorted: DataFrame):
     # ===== 6. CCI (商品通道指数) =====
     cci = ta.cci(high=df_sorted['high'], low=df_sorted['low'], 
-                            close=df_sorted['close'], length=14).rename('CCI_14')
+                            close=df_sorted['close'], length=14)
+    if cci is None:
+        return df_sorted
+    cci = cci.rename('CCI_14')
     with_cci = df_sorted.join(cci)
 
     # ===== 6. CCI 信号 =====
@@ -152,6 +165,8 @@ def willr(df_sorted: DataFrame):
     # ===== 7. WILLR (威廉姆斯 %R) =====
     willr = ta.willr(high=df_sorted['high'], low=df_sorted['low'], 
                                 close=df_sorted['close'], length=14)
+    if willr is None:
+        return df_sorted
     with_willr = df_sorted.join(willr)
 
     # ===== 7. WILLR 信号 =====
@@ -163,7 +178,10 @@ def willr(df_sorted: DataFrame):
 
 def ao(df_sorted: DataFrame):
     # ===== 8. AO (优势振荡器) =====
-    ao = ta.ao(high=df_sorted['high'], low=df_sorted['low']).rename('AO')
+    ao = ta.ao(high=df_sorted['high'], low=df_sorted['low'])
+    if ao is None:
+        return df_sorted
+    ao = ao.rename('AO')
     with_ao = df_sorted.join(ao)
 
     # ===== 8. AO 信号 =====
@@ -172,6 +190,7 @@ def ao(df_sorted: DataFrame):
     with_ao.loc[with_ao['AO'] < 0, 'AO_Signal'] = -1   # 负向动量
 
     # AO穿越零轴信号
+    with_ao['AO_Cross'] = 0
     with_ao.loc[
         (with_ao['AO'] > 0) & (with_ao['AO'].shift(1) <= 0),
         'AO_Cross'

@@ -33,6 +33,8 @@ def mad(df_sorted: DataFrame):
     # ===== 2. MAD (平均绝对偏差) =====
     # 使用 pandas_ta 的 mad 函数
     mad = ta.mad(close=df_sorted['close'], length=20)
+    if mad is None:
+        return df_sorted
     with_mad = df_sorted.join(mad)
 
     # ===== 2. MAD 信号 =====
@@ -102,7 +104,10 @@ def kurtosis(df_sorted: DataFrame):
 def zscore(df_sorted: DataFrame):
     # ===== 5. ZSCORE (Z分数) =====
     # 方法一：使用 pandas_ta 的 zscore 函数
-    zscore = ta.zscore(close=df_sorted['close'], length=20).rename('ZSCORE_20')
+    zscore = ta.zscore(close=df_sorted['close'], length=20)
+    if zscore is None:
+        return df_sorted
+    zscore = zscore.rename('ZSCORE_20')
     with_zscore = df_sorted.join(zscore)
 
     # 方法二：手动计算（验证用）
