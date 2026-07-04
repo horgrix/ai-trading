@@ -832,15 +832,17 @@ def generate_bullish_entry_signals(df: pd.DataFrame) -> pd.DataFrame:
     # 入场信号等级
     # ============================================================
     
-    # 1. 强烈入场（所有核心条件都满足）
+    # 1. 强烈入场（极其严格的筛选条件，仅少数的黄金机会触发）
     df['entry_strong'] = (
         trend_bullish &
         momentum_bullish &
         volume_bullish &
         volatility_bullish &
         stat_bullish &
-        (df['total_score'] > 1.0) &
-        (df['ADX_14'] > 25)                                 # 强趋势确认
+        (df['total_score'] > 2.0) &                         # 极高综合得分
+        (df['ADX_14'] > 35) &                               # 极度强趋势
+        (df['momentum_consensus'] >= 4) &                   # 动量高度一致
+        (df['volume_consensus'] >= 2)                       # 成交量方向一致
     )
     
     # 2. 中等入场（趋势+动量+成交量）
@@ -897,24 +899,24 @@ def generate_bullish_entry_signals(df: pd.DataFrame) -> pd.DataFrame:
     df.loc[df['entry_strong'], 'entry_level'] = 'strong'
     
     # 次高优先级：突破入场
-    df.loc[df['entry_breakout'] & (df['entry_signal'] == 0), 'entry_signal'] = 2
-    df.loc[df['entry_breakout'] & (df['entry_signal'] == 0), 'entry_level'] = 'breakout'
+    df.loc[df['entry_breakout'] & (df['entry_signal'] == 0.0), 'entry_signal'] = 2
+    df.loc[df['entry_breakout'] & (df['entry_signal'] == 0.0), 'entry_level'] = 'breakout'
     
     # 中等优先级：中等入场
-    df.loc[df['entry_medium'] & (df['entry_signal'] == 0), 'entry_signal'] = 2
-    df.loc[df['entry_medium'] & (df['entry_signal'] == 0), 'entry_level'] = 'medium'
+    df.loc[df['entry_medium'] & (df['entry_signal'] == 0.0), 'entry_signal'] = 2
+    df.loc[df['entry_medium'] & (df['entry_signal'] == 0.0), 'entry_level'] = 'medium'
     
     # 回调入场
-    df.loc[df['entry_pullback'] & (df['entry_signal'] == 0), 'entry_signal'] = 2
-    df.loc[df['entry_pullback'] & (df['entry_signal'] == 0), 'entry_level'] = 'pullback'
+    df.loc[df['entry_pullback'] & (df['entry_signal'] == 0.0), 'entry_signal'] = 2
+    df.loc[df['entry_pullback'] & (df['entry_signal'] == 0.0), 'entry_level'] = 'pullback'
     
     # 基础入场
-    df.loc[df['entry_basic'] & (df['entry_signal'] == 0), 'entry_signal'] = 1
-    df.loc[df['entry_basic'] & (df['entry_signal'] == 0), 'entry_level'] = 'basic'
+    df.loc[df['entry_basic'] & (df['entry_signal'] == 0.0), 'entry_signal'] = 1
+    df.loc[df['entry_basic'] & (df['entry_signal'] == 0.0), 'entry_level'] = 'basic'
     
     # 提前入场（最低优先级）
-    df.loc[df['entry_early'] & (df['entry_signal'] == 0), 'entry_signal'] = 1
-    df.loc[df['entry_early'] & (df['entry_signal'] == 0), 'entry_level'] = 'early'
+    df.loc[df['entry_early'] & (df['entry_signal'] == 0.0), 'entry_signal'] = 1
+    df.loc[df['entry_early'] & (df['entry_signal'] == 0.0), 'entry_level'] = 'early'
     
     # ============================================================
     # 入场确认（额外过滤条件）
@@ -927,7 +929,7 @@ def generate_bullish_entry_signals(df: pd.DataFrame) -> pd.DataFrame:
     df.loc[(df['Volatility_State'] == 'high') & (df['entry_signal'] > 0), 'entry_signal'] *= 0.5
     df.loc[(df['Volatility_State'] == 'high') & (df['entry_level'] != 'none'), 'entry_level'] += '_cautious'
     
-    return df[['date', 'close', 'entry_signal', 'entry_level']]
+    return df
 
 def generate_bullish_take_profit_signals(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -1093,4 +1095,4 @@ def generate_bullish_take_profit_signals(df: pd.DataFrame) -> pd.DataFrame:
     # 如果综合得分转负，立即止盈
     df.loc[(df['total_score'] < -0.5) & (df['tp_signal'] <= 1), 'tp_level'] = 'score_sell'
     
-    return df[['date', 'close', 'tp_signal', 'tp_level']]
+    return df
