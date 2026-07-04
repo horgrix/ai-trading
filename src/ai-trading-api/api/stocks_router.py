@@ -24,7 +24,7 @@ from indicators.volatility_indicators import atr, bbands, kc, donchian
 from indicators.overlap_Indicators import ema, sma, hma, wma, kama
 from indicators.mtm_indicators import roc, rsi, macd, mom, stoch, willr, ao, cci
 
-from strategies.score_strategy import strong_buy, oversold_opportunity, trend_continuation
+from strategies.score_strategy import calculate_all_scores , generate_bullish_entry_signals, generate_bullish_take_profit_signals
 
 # 函数映射表
 FUNCTION_MAP = {
@@ -78,8 +78,8 @@ def get_available_symbols():
         symbols = dao_get_symbols(conn)
     return {"count": len(symbols), "data": symbols}
 
-@router.get("/strategies")
-def get_trading_strategies(
+@router.get("/strategies/buy_point")
+def get_trading_strategies_buy(
     symbol: str = Query(..., description="股票代码"),
     type: str = Query(..., description="时间类型"),
     start_date: Optional[str] = Query(None, description="起始日期 (YYYY-MM-DD)"),
@@ -91,7 +91,16 @@ def get_trading_strategies(
     if df.empty:
         return {"count": 0, "data": []}
     
-    strong_buy(df)
+    df = df.reset_index()
+    df["date"] = df["date"].dt.strftime("%Y-%m-%d")
+
+    df = df.copy()
+    df = calculate_all_scores(df)
+    df = generate_bullish_entry_signals(df)
+    # 将 NaN 替换为 None，确保 JSON 序列化兼容
+    df = df.replace({np.nan: None})
+    records = df.to_dict(orient="records")
+    return {"count": len(records), "data": records}
 
 
 @router.get("/data")
