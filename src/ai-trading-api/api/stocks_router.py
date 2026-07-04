@@ -8,6 +8,7 @@
 """
 
 from typing import Optional
+import numpy as np
 
 from fastapi import APIRouter, Query
 
@@ -108,6 +109,8 @@ def get_stock_data(
                 continue
             df = FUNCTION_MAP[indicator](df)
 
+    # 将 NaN 替换为 None，确保 JSON 序列化兼容
+    df = df.replace({np.nan: None})
     records = df.to_dict(orient="records")
     return {"count": len(records), "data": records}
 
