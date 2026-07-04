@@ -7,7 +7,7 @@ from database import ai_trading_db
 def excute_hkma(target_date: str = None, day_delta: int = 90):
 
     try:
-        now = datetime.now().strptime(target_date, "%Y-%m-%d")
+        now = datetime.now().strftime("%Y-%m-%d")
         if target_date is not None:
             now = datetime.strptime(target_date, "%Y-%m-%d")
     except ValueError as e:

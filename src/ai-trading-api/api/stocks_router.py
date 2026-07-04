@@ -16,6 +16,55 @@ from dao.stocks_dao import get_date_range as dao_get_date_range
 from dao.stocks_dao import load_stock_data
 from database.ai_trading_db import connection
 
+from indicators.statistics_indicators import std, mad, skew, kurtosis, zscore
+from indicators.trend_indicators import adx, aroon, chop, psar, vortex
+from indicators.volume_indicators import ad, aobv, cmf, mfi, obv
+from indicators.volatility_indicators import atr, bbands, kc, donchian
+from indicators.overlap_Indicators import ema, sma, hma, wma, kama
+from indicators.mtm_indicators import roc, rsi, macd, mom, stoch, willr, ao, cci
+
+# 函数映射表
+FUNCTION_MAP = {
+    # mtm_indicators
+    'roc': roc, 
+    'rsi': rsi, 
+    'macd': macd, 
+    'mom': mom, 
+    'stoch': stoch, 
+    'willr': willr, 
+    'ao': ao, 
+    'cci': cci,
+    # overlap_Indicators
+    'ema': ema, 
+    'sma': sma, 
+    'hma': hma, 
+    'wma': wma, 
+    'kama': kama,
+    # volatility_indicators
+    'atr': atr, 
+    'bbands': bbands, 
+    'kc': kc, 
+    'donchian': donchian,
+    # volume_indicators
+    'ad': ad, 
+    'aobv': aobv, 
+    'cmf': cmf, 
+    'mfi': mfi, 
+    'obv': obv,
+    # trend_indicators
+    'adx': adx, 
+    'aroon': aroon, 
+    'chop': chop, 
+    'psar': psar, 
+    'vortex': vortex,
+    # statistics_indicators
+    'std': std, 
+    'mad': mad, 
+    'skew': skew, 
+    'kurtosis': kurtosis, 
+    'zscore': zscore
+}
+
 router = APIRouter(prefix="/api/v2/market/stocks", tags=["stocks"])
 
 
@@ -33,6 +82,7 @@ def get_stock_data(
     type: str = Query(..., description="时间类型"),
     start_date: Optional[str] = Query(None, description="起始日期 (YYYY-MM-DD)"),
     end_date: Optional[str] = Query(None, description="结束日期 (YYYY-MM-DD)"),
+    indicators: Optional[str]= Query(None, description="指标rsi,macd"),
 ):
     """
     查询股票交易数据
@@ -50,6 +100,14 @@ def get_stock_data(
 
     df = df.reset_index()
     df["date"] = df["date"].dt.strftime("%Y-%m-%d")
+
+    if indicators:
+        indicator_list: list[str] = indicators.split(",")
+        for indicator in indicator_list:
+            if indicator not in FUNCTION_MAP:
+                continue
+            df = indicator(df)
+
     records = df.to_dict(orient="records")
     return {"count": len(records), "data": records}
 
