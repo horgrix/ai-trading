@@ -829,103 +829,76 @@ def generate_bullish_entry_signals(df: pd.DataFrame) -> pd.DataFrame:
     )
     
     # ============================================================
-    # 入场信号等级
-    # ============================================================
-    
-    # 1. 强烈入场（极其严格的筛选条件，仅少数的黄金机会触发）
-    df['entry_strong'] = (
-        trend_bullish &
-        momentum_bullish &
-        volume_bullish &
-        volatility_bullish &
-        stat_bullish &
-        (df['total_score'] > 2.0) &                         # 极高综合得分
-        (df['ADX_14'] > 35) &                               # 极度强趋势
-        (df['momentum_consensus'] >= 4) &                   # 动量高度一致
-        (df['volume_consensus'] >= 2)                       # 成交量方向一致
-    )
-    
-    # 2. 中等入场（趋势+动量+成交量）
-    df['entry_medium'] = (
-        trend_bullish &
-        momentum_bullish &
-        volume_bullish &
-        (df['total_score'] > 0.5)
-    )
-    
-    # 3. 基础入场（趋势+动量）
-    df['entry_basic'] = (
-        trend_bullish &
-        momentum_bullish &
-        (df['total_score'] > 0.3)
-    )
-    
-    # 4. 提前入场（统计机会+趋势启动）
-    df['entry_early'] = (
-        (df['stat_score'] > 0.5) &                          # 统计显示机会
-        (df['trend_score'] > 0) &                           # 趋势刚转正
-        (df['momentum_score'] > 0) &                        # 动量刚转正
-        (df['ADX_14'] < 25) &                               # 趋势尚未形成（提前布局）
-        (df['stat_golden_buy'] == True)                     # 统计黄金买入
-    )
-    
-    # 5. 回调入场（趋势中回调买入）
-    df['entry_pullback'] = (
-        (df['trend_score'] > 0.5) &                         # 上升趋势
-        (df['momentum_score'] < -0.3) &                     # 动量回调
-        (df['close'] < df['SMA_20']) &                      # 价格在均线之下（回调）
-        (df['close'] > df['SMA_50']) &                      # 但仍在长期均线之上
-        (df['volume_score'] > 0) &                          # 资金仍在流入
-        (df['RSI_14'] > 40)                                 # RSI未过度超卖
-    )
-    
-    # 6. 突破入场（价格突破关键位）
-    df['entry_breakout'] = (
-        (df['close'] > df['DC_Upper']) &                    # 突破唐奇安上轨
-        (df['volume'] > df['volume'].rolling(20).mean()) &  # 放量
-        (df['ADX_14'] > 25) &                               # 趋势确认
-        (df['momentum_score'] > 0.5) &                      # 动量强劲
-        (df['CHOP_14'] < 38.2)                              # 趋势市
-    )
-    
-    # ============================================================
-    # 综合入场信号
+    # 入场信号等级（按综合得分分层 + 特定模式匹配）
     # ============================================================
     df['entry_signal'] = 0.0
     df['entry_level'] = 'none'
     
-    # 最高优先级：强烈入场
-    df.loc[df['entry_strong'], 'entry_signal'] = 3
-    df.loc[df['entry_strong'], 'entry_level'] = 'strong'
+    # 必须有基础多头信号才参与分级
+    base_bullish = trend_bullish & momentum_bullish & (df['total_score'] > 0.3)
     
-    # 次高优先级：突破入场
-    df.loc[df['entry_breakout'] & (df['entry_signal'] == 0.0), 'entry_signal'] = 2
-    df.loc[df['entry_breakout'] & (df['entry_signal'] == 0.0), 'entry_level'] = 'breakout'
+    # ----- 等级3：强烈入场（综合得分极高，五维共振）-----
+    # total_score > 2.5 且所有维度都正向
+    strong_cond = (
+        base_bullish &
+        (df['total_score'] > 2.5) &
+        (df['trend_score'] > 1.5) &
+        (df['momentum_score'] > 1.0) &
+        (df['volume_score'] > 0.5) &
+        (df['ADX_14'] > 30)
+    )
+    df.loc[strong_cond, 'entry_signal'] = 3
+    df.loc[strong_cond, 'entry_level'] = 'strong'
     
-    # 中等优先级：中等入场
-    df.loc[df['entry_medium'] & (df['entry_signal'] == 0.0), 'entry_signal'] = 2
-    df.loc[df['entry_medium'] & (df['entry_signal'] == 0.0), 'entry_level'] = 'medium'
+    # ----- 等级2：突破入场（价格突破关键位置）-----
+    breakout_cond = (
+        base_bullish &
+        (df['entry_signal'] == 0.0) &
+        (df['close'] > df['DC_Upper']) &
+        (df['volume'] > df['volume'].rolling(20).mean()) &
+        (df['CHOP_14'] < 38.2)
+    )
+    df.loc[breakout_cond, 'entry_signal'] = 2
+    df.loc[breakout_cond, 'entry_level'] = 'breakout'
     
-    # 回调入场
-    df.loc[df['entry_pullback'] & (df['entry_signal'] == 0.0), 'entry_signal'] = 2
-    df.loc[df['entry_pullback'] & (df['entry_signal'] == 0.0), 'entry_level'] = 'pullback'
+    # ----- 等级2：回调买入（趋势中回调）-----
+    pullback_cond = (
+        (df['entry_signal'] == 0.0) &
+        (df['trend_score'] > 0.5) &
+        (df['momentum_score'] < -0.3) &
+        (df['close'] < df['SMA_20']) &
+        (df['close'] > df['SMA_50']) &
+        (df['volume_score'] > 0)
+    )
+    df.loc[pullback_cond, 'entry_signal'] = 2
+    df.loc[pullback_cond, 'entry_level'] = 'pullback'
     
-    # 基础入场
-    df.loc[df['entry_basic'] & (df['entry_signal'] == 0.0), 'entry_signal'] = 1
-    df.loc[df['entry_basic'] & (df['entry_signal'] == 0.0), 'entry_level'] = 'basic'
+    # ----- 等级1：标准入场（total_score > 1.0，多维度健康）-----
+    medium_cond = (
+        base_bullish &
+        (df['entry_signal'] == 0.0) &
+        (df['total_score'] > 1.0) &
+        (df['volume_score'] > 0)
+    )
+    df.loc[medium_cond, 'entry_signal'] = 1
+    df.loc[medium_cond, 'entry_level'] = 'medium'
     
-    # 提前入场（最低优先级）
-    df.loc[df['entry_early'] & (df['entry_signal'] == 0.0), 'entry_signal'] = 1
-    df.loc[df['entry_early'] & (df['entry_signal'] == 0.0), 'entry_level'] = 'early'
+    # ----- 等级1：基础入场（仅趋势+动量确认）-----
+    basic_cond = (
+        base_bullish &
+        (df['entry_signal'] == 0.0)
+    )
+    df.loc[basic_cond, 'entry_signal'] = 1
+    df.loc[basic_cond, 'entry_level'] = 'basic'
     
     # ============================================================
     # 入场确认（额外过滤条件）
     # ============================================================
-    # 排除震荡市中的假信号（CHOP过滤）
+    # 排除震荡市中的假信号（CHOP过滤，降级处理）
     df.loc[df['CHOP_14'] > 61.8, 'entry_signal'] = 0
     df.loc[df['CHOP_14'] > 61.8, 'entry_level'] = 'filtered_choppy'
     
-    # 排除高波动环境（风险控制）
+    # 高波动环境降级处理
     df.loc[(df['Volatility_State'] == 'high') & (df['entry_signal'] > 0), 'entry_signal'] *= 0.5
     df.loc[(df['Volatility_State'] == 'high') & (df['entry_level'] != 'none'), 'entry_level'] += '_cautious'
     
