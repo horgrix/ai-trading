@@ -28,7 +28,7 @@ LOG_DIR = PROJECT_DIR / "logs"
 DB_PATH = DATA_DIR / "ai_trading_db.sqlite"
 
 # 创建必要的目录
-for directory in [DATA_DIR, LOG_DIR]:
+for directory in [DATA_DIR]:
     directory.mkdir(parents=True, exist_ok=True)
 
 class Settings(BaseSettings):

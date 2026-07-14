@@ -41,4 +41,4 @@ def excute_fetch_his_stocks_data(symbol='02400'):
         logger.error(f"定时任务[历史香港股票交易数据]执行失败! {e}")
 
 # excute_fetch_his_hkma_data()
-# excute_fetch_his_stocks_data()
+excute_fetch_his_stocks_data()

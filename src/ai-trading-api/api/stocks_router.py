@@ -17,14 +17,14 @@ from dao.stocks_dao import get_date_range as dao_get_date_range
 from dao.stocks_dao import load_stock_data
 from database.ai_trading_db import connection
 
-from indicators.statistics_indicators import std, mad, skew, kurtosis, zscore
-from indicators.trend_indicators import adx, aroon, chop, psar, vortex
-from indicators.volume_indicators import ad, aobv, cmf, mfi, obv
-from indicators.volatility_indicators import atr, bbands, kc, donchian
-from indicators.overlap_Indicators import ema, sma, hma, wma, kama
-from indicators.mtm_indicators import roc, rsi, macd, mom, stoch, willr, ao, cci
+from indicators.statistics_indicators import skew, kurtosis, zscore
+from indicators.trend_indicators import adx, aroon, chop, psar
+from indicators.volume_indicators import cmf, mfi, obv
+from indicators.volatility_indicators import atr, bbands, donchian
+from indicators.overlap_Indicators import ema, sma
+from indicators.mtm_indicators import roc, rsi, macd, mom, stoch, ao
 
-from strategies.score_strategy import calculate_all_scores , generate_bullish_entry_signals, generate_bullish_take_profit_signals
+from strategies.strategy import BreakThroughStrategy
 
 # 函数映射表
 FUNCTION_MAP = {
@@ -34,23 +34,15 @@ FUNCTION_MAP = {
     'macd': macd, 
     'mom': mom, 
     'stoch': stoch, 
-    'willr': willr, 
     'ao': ao, 
-    'cci': cci,
     # overlap_Indicators
     'ema': ema, 
     'sma': sma, 
-    'hma': hma, 
-    'wma': wma, 
-    'kama': kama,
     # volatility_indicators
     'atr': atr, 
     'bbands': bbands, 
-    'kc': kc, 
     'donchian': donchian,
     # volume_indicators
-    'ad': ad, 
-    'aobv': aobv, 
     'cmf': cmf, 
     'mfi': mfi, 
     'obv': obv,
@@ -59,10 +51,7 @@ FUNCTION_MAP = {
     'aroon': aroon, 
     'chop': chop, 
     'psar': psar, 
-    'vortex': vortex,
     # statistics_indicators
-    'std': std, 
-    'mad': mad, 
     'skew': skew, 
     'kurtosis': kurtosis, 
     'zscore': zscore
@@ -78,14 +67,8 @@ def get_available_symbols():
         symbols = dao_get_symbols(conn)
     return {"count": len(symbols), "data": symbols}
 
-@router.get("/signals")
-def get_trading_strategies_buy(
-    symbol: str = Query(..., description="股票代码"),
-    type: str = Query(..., description="时间类型"),
-    start_date: Optional[str] = Query(None, description="起始日期 (YYYY-MM-DD)"),
-    end_date: Optional[str] = Query(None, description="结束日期 (YYYY-MM-DD)"),
-    option: Optional[str] = Query('buy', description="buy|sell"),
-):
+def _query_data(symbol: str, type: str, start_date: str, end_date: str):
+
     with connection() as conn:
         df = load_stock_data(conn, symbol, type, start_date, end_date)
 
@@ -95,19 +78,28 @@ def get_trading_strategies_buy(
     df = df.reset_index()
     df["date"] = df["date"].dt.strftime("%Y-%m-%d")
 
-    df = df.copy()
-    df = calculate_all_scores(df)
-    if option == 'buy':
-        df = generate_bullish_entry_signals(df)
-        df = df[['date', 'close', 'entry_signal', 'entry_level']]
-    else:
-        df = generate_bullish_take_profit_signals(df)
-        df = df[['date', 'close', 'tp_signal', 'tp_level']]
+    return df;
+
+@router.get("/strategy_1")
+def get_trading_strategies_buy(
+    symbol: str = Query(..., description="股票代码"),
+    type: str = Query(..., description="时间类型"),
+    start_date: Optional[str] = Query(None, description="起始日期 (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="结束日期 (YYYY-MM-DD)")
+):
+    
+    df = _query_data(symbol=symbol, type=type, start_date=start_date, end_date=end_date)
+
+    strategy = BreakThroughStrategy(df)
+    df = strategy.get_data()
+    df['signals'] = 0
+    df.loc[strategy.get_entries(), 'signals'] = 1
+    df.loc[strategy.get_exits(), 'signals'] = -1
+    df = df[['date', 'close', 'RSI', 'RSI_Div_Signal', 'DC_Upper', 'DC_Lower', 'DC_Middle', 'ROC', 'CHOP', 'ADX', 'DMP', 'DMN', 'ATR', 'signals']]
     # 将 NaN 替换为 None，确保 JSON 序列化兼容
     df = df.replace({np.nan: None})
     records = df.to_dict(orient="records")
     return {"count": len(records), "data": records}
-
 
 @router.get("/data")
 def get_stock_data(
@@ -125,14 +117,7 @@ def get_stock_data(
     - **start_date**: 可选，起始日期
     - **end_date**: 可选，结束日期
     """
-    with connection() as conn:
-        df = load_stock_data(conn, symbol, type, start_date, end_date)
-
-    if df.empty:
-        return {"count": 0, "data": []}
-
-    df = df.reset_index()
-    df["date"] = df["date"].dt.strftime("%Y-%m-%d")
+    df = _query_data(symbol=symbol, type=type, start_date=start_date, end_date=end_date)
 
     if indicators:
         indicator_list: list[str] = indicators.split(",")
